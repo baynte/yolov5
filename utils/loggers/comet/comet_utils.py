@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 try:
     import comet_ml
-except (ModuleNotFoundError, ImportError):
+except ImportError:
     comet_ml = None
 
 import yaml
@@ -17,6 +17,7 @@ COMET_DEFAULT_CHECKPOINT_FILENAME = os.getenv("COMET_DEFAULT_CHECKPOINT_FILENAME
 
 
 def download_model_checkpoint(opt, experiment):
+    """Downloads YOLOv5 model checkpoint from Comet ML experiment, updating `opt.weights` with download path."""
     model_dir = f"{opt.project}/{experiment.name}"
     os.makedirs(model_dir, exist_ok=True)
 
@@ -109,14 +110,13 @@ def check_comet_weights(opt):
     if comet_ml is None:
         return
 
-    if isinstance(opt.weights, str):
-        if opt.weights.startswith(COMET_PREFIX):
-            api = comet_ml.API()
-            resource = urlparse(opt.weights)
-            experiment_path = f"{resource.netloc}{resource.path}"
-            experiment = api.get(experiment_path)
-            download_model_checkpoint(opt, experiment)
-            return True
+    if isinstance(opt.weights, str) and opt.weights.startswith(COMET_PREFIX):
+        api = comet_ml.API()
+        resource = urlparse(opt.weights)
+        experiment_path = f"{resource.netloc}{resource.path}"
+        experiment = api.get(experiment_path)
+        download_model_checkpoint(opt, experiment)
+        return True
 
     return None
 
@@ -136,15 +136,14 @@ def check_comet_resume(opt):
     if comet_ml is None:
         return
 
-    if isinstance(opt.resume, str):
-        if opt.resume.startswith(COMET_PREFIX):
-            api = comet_ml.API()
-            resource = urlparse(opt.resume)
-            experiment_path = f"{resource.netloc}{resource.path}"
-            experiment = api.get(experiment_path)
-            set_opt_parameters(opt, experiment)
-            download_model_checkpoint(opt, experiment)
+    if isinstance(opt.resume, str) and opt.resume.startswith(COMET_PREFIX):
+        api = comet_ml.API()
+        resource = urlparse(opt.resume)
+        experiment_path = f"{resource.netloc}{resource.path}"
+        experiment = api.get(experiment_path)
+        set_opt_parameters(opt, experiment)
+        download_model_checkpoint(opt, experiment)
 
-            return True
+        return True
 
     return None
