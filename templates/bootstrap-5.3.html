@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LPR - Thesis</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-    /* Additional CSS for animation */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPR - Thesis</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        /* Additional CSS for animation */
     .manual-card {
         display: none; /* Hide initially */
     }
@@ -64,80 +66,143 @@
         -ms-transform: translateX(40px);
         transform: translateX(40px);
     }
+    .uppercase {
+        text-transform: uppercase;
+    }
+    #plate-number {
+        text-align: center;
+        font-size: 3rem;
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
-<div class="container-fluid">
-    <div class="row pt-3">
-        <div class="col">
-            <div class="ratio ratio-4x3">
-                <!-- Placeholder for image or video stream -->
-                <!-- <img src="{{ url_for('video_feed') }}" class="video" alt="Video Stream"> -->
-                <img src="/video_feed" class="video" alt="Video Stream">
-            </div>
-        </div>
-        <div class="col">
-            <span class="px-1">API Callback for Raspberry Model</span>
-            <div class="alert alert-primary mt-1 d-flex justify-content-between align-items-center" role="alert">
-                <span>http://{{ host_ip }}:5000/gate-status</span>
-                <div id="gate-status" class="p-2 rounded bold bg-white">
-                  OPEN
+    <div class="container-fluid">
+        <div class="row pt-3">
+            <div class="col">
+                <div class="ratio ratio-4x3">
+                    <!-- Placeholder for image or video stream -->
+                    <img id="video-feed" src="/video_feed/auto" class="video" alt="Video Stream">
                 </div>
             </div>
-            <div id="gate-config" class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Gate Configurations</span>
-                    <div>
-                        <input type="radio" class="btn-check" name="options-base" id="opt-automatic" autocomplete="off" checked>
-                        <label class="btn" for="opt-automatic">Automatic</label>
-
-                        <input type="radio" class="btn-check" name="options-base" id="opt-manual" autocomplete="off">
-                        <label class="btn" for="opt-manual">Manual</label>
+            <div class="col">
+                <span class="px-1">API Callback for Raspberry Model</span>
+                <div class="alert alert-primary mt-1 d-flex justify-content-between align-items-center" role="alert">
+                    <span>http://{{ host_ip }}:5000/gate-status</span>
+                    <div id="gate-status" class="p-2 rounded bold bg-white uppercase">
+                        OPEN
                     </div>
                 </div>
-                <div class="card-body" id="automatic-content">
-                    <!-- Automatic Content -->
-                    Automatic Content
-                </div>
-                <div class="card-body manual-card" id="manual-content">
-                    <!-- Manual Content -->
-                    <div class="controls-container">
-                        <div class="switch-label" id="switchLabel">GATE CLOSED</div>
-                        <label class="switch">
-                            <input type="checkbox" id="switchBtn">
-                            <span class="slider"></span>
-                        </label>
+                <div id="gate-config" class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Gate Configurations</span>
+                        <div>
+                            <input type="radio" class="btn-check" name="options-base" id="opt-automatic" autocomplete="off" checked>
+                            <label class="btn" for="opt-automatic">Automatic</label>
+
+                            <input type="radio" class="btn-check" name="options-base" id="opt-manual" autocomplete="off">
+                            <label class="btn" for="opt-manual">Manual</label>
+                        </div>
+                    </div>
+                    <div class="card-body" id="automatic-content">
+                        <p>Detected Plate Number:</p>
+                        <p id="plate-number">KKK - BBB</p>
+                    </div>
+                    <div class="card-body manual-card" id="manual-content">
+                        <div class="controls-container">
+                            <div class="switch-label" id="switchLabel">GATE CLOSED</div>
+                            <label class="switch">
+                                <input type="checkbox" id="switchBtn">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function() {
-      const switchBtn = document.getElementById('switchBtn');
-      const switchLabel = document.getElementById('switchLabel');
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script>
+        $(document).ready(function() {
+            const switchBtn = document.getElementById('switchBtn');
+            const switchLabel = document.getElementById('switchLabel');
 
-      switchBtn.addEventListener('change', () => {
-          switchLabel.textContent = switchBtn.checked ? 'GATE OPEN' : 'GATE CLOSED';
-      });
+            function updateTextGateStatus(text){
+                document.getElementById('gate-status').innerText = text
+            }
 
-      $('#automatic-content').show();
-      // Toggle event handler for radio buttons
-      $('input[type="radio"]').change(function() {
-          if ($(this).attr('id') === 'opt-automatic') {
-              // Show automatic content and hide manual content
-              $('#automatic-content').show();
-              $('#manual-content').hide();
-          } else if ($(this).attr('id') === 'opt-manual') {
-              // Show manual content and hide automatic content
-              $('#automatic-content').hide();
-              $('#manual-content').show();
-          }
-      });
-    });
-</script>
+            function updateManualGateStatus(bool){
+                // Define the URL endpoint for the POST request
+                const url = '/update-gate-status-manually';
+                console.log(bool)
+
+                // Create an object with your boolean parameter
+                const data = { isEnabled: bool };
+
+                // Send a POST request with the boolean parameter
+                fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                })
+                .then(response => response.json())
+                .then(data => {
+                console.log('Response:', data);
+                })
+                .catch(error => {
+                console.error('Error:', error);
+                });
+            }
+            
+            switchBtn.addEventListener('change', () => {
+                switchLabel.textContent = switchBtn.checked ? 'GATE OPEN' : 'GATE CLOSED';
+                updateManualGateStatus(switchBtn.checked)
+            });
+
+            var image = document.getElementById('video-feed');
+            // Toggle event handler for radio buttons
+            $('input[type="radio"]').change(function() {
+                if ($(this).attr('id') === 'opt-automatic') {
+                    // Show automatic content and hide manual content
+                    $('#automatic-content').show();
+                    $('#manual-content').hide();
+                    switchBtn.checked = false;
+                    // Set the new image source
+                    image.src = '/video_feed/auto';
+                } else if ($(this).attr('id') === 'opt-manual') {
+                    // Show manual content and hide automatic content
+                    $('#automatic-content').hide();
+                    $('#manual-content').show();
+                    image.src = '/video_feed/manual';
+                }
+                updateManualGateStatus(switchBtn.checked)
+            });
+
+            // Function to fetch gate status and update the page
+            function fetchGateStatus() {
+                fetch('/gate-status')
+                    .then(response => response.text())
+                    .then(data => {
+                        // Update the content of the 'gate-status' div with the fetched data
+                        updateTextGateStatus(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching gate status:', error);
+                    });
+            }
+
+            // Fetch gate status initially
+            fetchGateStatus();
+
+            // Fetch gate status periodically (every 2 seconds in this example)
+            setInterval(fetchGateStatus, 2000);
+        });
+    </script>
 </body>
 </html>
