@@ -7,6 +7,7 @@ import numpy as np
 from models.experimental import attempt_load
 from utils.general import non_max_suppression
 import time
+import json
 
 app = Flask(__name__)
 
@@ -149,8 +150,10 @@ def receive_post_request():
 def gate_status():
     try:
         with open('gate-status.txt', 'r') as file:
-            content = file.readline()
-        return content
+            content = file.readline().strip()
+        return json.dumps({
+            "data": False if content == "close" else True 
+        })
     except FileNotFoundError:
         return "close"
 
