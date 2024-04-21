@@ -8,73 +8,61 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <style>
-        /* Additional CSS for animation */
-    .manual-card {
-        display: none; /* Hide initially */
-    }
-    .controls-container {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        position: relative;
-    }
-    .switch-label {
-        color: #248232;
-        margin-bottom: 10px;
-        font-size: 20px;
-    }
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 80px;
-        height: 40px;
-    }
-    .switch input {
-        display: none;
-    }
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #F1FEC6;
-        -webkit-transition: .4s;
-        transition: .4s;
-        border-radius: 40px;
-    }
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 32px;
-        width: 32px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        -webkit-transition: .4s;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    input:checked + .slider {
-        background-color: #248232;
-    }
-    input:checked + .slider:before {
-        -webkit-transform: translateX(40px);
-        -ms-transform: translateX(40px);
-        transform: translateX(40px);
-    }
-    .uppercase {
-        text-transform: uppercase;
-    }
-    #plate-number {
-        text-align: center;
-        font-size: 3rem;
-        font-weight: bold;
-    }
-</style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container-fluid {
+            padding: 20px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .video-feed {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .api-info {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .gate-status {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .gate-control-label {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .switch-label {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .slider {
+            background-color: #ffc107;
+        }
+
+        #plate-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body>
     <div class="container-fluid">
@@ -82,44 +70,86 @@
             <div class="col">
                 <div class="ratio ratio-4x3">
                     <!-- Placeholder for image or video stream -->
-                    <img id="video-feed" src="/video_feed/auto" class="video" alt="Video Stream">
+                    <img id="video-feed" src="/video_feed/auto" class="video-feed" alt="Video Stream">
                 </div>
             </div>
             <div class="col">
-                <span class="px-1">API Callback for Raspberry Model</span>
-                <div class="alert alert-primary mt-1 d-flex justify-content-between align-items-center" role="alert">
-                    <span>http://{{ host_ip }}:5000/gate-status</span>
-                    <div id="gate-status" class="p-2 rounded bold bg-white uppercase">
-                        OPEN
-                    </div>
-                </div>
+                <div class="api-info">API Callback for Raspberry Model</div>
+                <div class="alert alert-primary mt-1" role="alert">
+                    <span id="api-url">http://{{ host_ip }}:5000/gate-status</span>
+                    <button class="btn btn-sm btn-primary ms-2" onclick="copyApiUrl()">Copy URL</button>
+                    <div id="gate-status" class="gate-status mt-3">OPEN</div>
+                </div>                
                 <div id="gate-config" class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Gate Configurations</span>
-                        <div>
-                            <input type="radio" class="btn-check" name="options-base" id="opt-automatic" autocomplete="off" checked>
-                            <label class="btn" for="opt-automatic">Automatic</label>
-
-                            <input type="radio" class="btn-check" name="options-base" id="opt-manual" autocomplete="off">
-                            <label class="btn" for="opt-manual">Manual</label>
+                    <div class="card-header">
+                        <span class="gate-control-label">Gate Configurations</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="radio" name="options-base" id="opt-automatic" autocomplete="off" checked>
+                            <label class="form-check-label" for="opt-automatic">Automatic</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="radio" name="options-base" id="opt-manual" autocomplete="off">
+                            <label class="form-check-label" for="opt-manual">Manual</label>
                         </div>
                     </div>
                     <div class="card-body" id="automatic-content">
-                        <p>Detected Plate Number:</p>
-                        <p id="plate-number">KKK - BBB</p>
+                        <p class="mt-3">Detected Plate Number:</p>
+                        <p id="plate-number">NO DETECTED</p>
                     </div>
                     <div class="card-body manual-card" id="manual-content">
-                        <div class="controls-container">
-                            <div class="switch-label" id="switchLabel">GATE CLOSED</div>
-                            <label class="switch">
-                                <input type="checkbox" id="switchBtn">
-                                <span class="slider"></span>
-                            </label>
+                        <div class="form-check form-switch">
+                            <label class="switch-label" id="switchLabel">GATE CLOSED</label>
+                            <input type="checkbox" class="form-check-input" id="switchBtn">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <section class="mt-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">CARAGA STATE UNIVERSITY - REGISTERED VEHICLES</h5>
+                    <h6 class="card-subtitle mb-2 text-body-secondary">
+                        A list of registered vehicles under Caraga State University Campus
+                    </h6>
+                    <div class="row align-items-start">
+                        <div class="col-3">
+                            <!-- Create Form -->
+                            <h4>Registration Form</h4>
+                            <form id="create-form">
+                                <div class="mb-1">
+                                    <label for="name" class="form-label">Vehicle Owner</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="mb-1">
+                                    <label for="plate_number" class="form-label">Plate Number</label>
+                                    <input type="text" class="form-control" id="plate_number" name="plate_number"></input>
+                                </div>
+                                <div class="mb-1">
+                                    <label for="car_brand" class="form-label">Car Brand</label>
+                                    <input type="text" class="form-control" id="car_brand" name="car_brand"></input>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add Vehicle</button>
+                            </form>
+                        </div>
+                        <div class="col-4">
+                            <div>
+                                <h3 class="mb-3">Registered Vehicle</h3>
+                                <ul id="vehicle-list" class="list-group">
+                                    <!-- Vehicles will be dynamically added here -->
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <h3>Vehicle Logs</h3>
+                            <!-- List of vehicles & edit deletion function -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -127,23 +157,41 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Custom JavaScript -->
     <script>
+
+        function copyApiUrl() {
+            const apiUrl = document.getElementById('api-url').innerText;
+
+            // Create a temporary textarea element to hold the text to copy
+            const textarea = document.createElement('textarea');
+            textarea.value = apiUrl;
+            document.body.appendChild(textarea);
+
+            // Select and copy the text inside the textarea
+            textarea.select();
+            document.execCommand('copy');
+
+            // Remove the temporary textarea
+            document.body.removeChild(textarea);
+
+            // Optionally, provide feedback to the user
+            alert('URL copied to clipboard: ' + apiUrl);
+        }
+
         $(document).ready(function() {
             const switchBtn = document.getElementById('switchBtn');
             const switchLabel = document.getElementById('switchLabel');
 
-            function updateTextGateStatus(text){
-                document.getElementById('gate-status').innerText = text
+            function updateTextGateStatus(status){
+                document.getElementById('gate-status').innerText = status ? 'OPEN' : 'CLOSE'
+            }
+            function updateTextPlateNumber(text){
+                document.getElementById('plate-number').innerText = text || 'NO DETECTION'
             }
 
             function updateManualGateStatus(bool){
-                // Define the URL endpoint for the POST request
                 const url = '/update-gate-status-manually';
-                console.log(bool)
-
-                // Create an object with your boolean parameter
                 const data = { isEnabled: bool };
 
-                // Send a POST request with the boolean parameter
                 fetch(url, {
                 method: 'POST',
                 headers: {
@@ -165,18 +213,16 @@
                 updateManualGateStatus(switchBtn.checked)
             });
 
+            $('#manual-content').hide();
+
             var image = document.getElementById('video-feed');
-            // Toggle event handler for radio buttons
             $('input[type="radio"]').change(function() {
                 if ($(this).attr('id') === 'opt-automatic') {
-                    // Show automatic content and hide manual content
                     $('#automatic-content').show();
                     $('#manual-content').hide();
                     switchBtn.checked = false;
-                    // Set the new image source
                     image.src = '/video_feed/auto';
                 } else if ($(this).attr('id') === 'opt-manual') {
-                    // Show manual content and hide automatic content
                     $('#automatic-content').hide();
                     $('#manual-content').show();
                     image.src = '/video_feed/manual';
@@ -184,24 +230,120 @@
                 updateManualGateStatus(switchBtn.checked)
             });
 
-            // Function to fetch gate status and update the page
             function fetchGateStatus() {
                 fetch('/gate-status')
                     .then(response => response.text())
                     .then(data => {
-                        // Update the content of the 'gate-status' div with the fetched data
-                        updateTextGateStatus(data);
+                        // console.log(data)
+                        const obj = JSON.parse(data)
+                        updateTextGateStatus(obj.data);
+                        updateTextPlateNumber(obj.text);
                     })
                     .catch(error => {
                         console.error('Error fetching gate status:', error);
                     });
             }
 
-            // Fetch gate status initially
             fetchGateStatus();
-
-            // Fetch gate status periodically (every 2 seconds in this example)
             setInterval(fetchGateStatus, 2000);
+
+
+            const currentHost = window.location.hostname;
+            const currentProtocol = window.location.protocol;
+
+            // Set the new port number
+            const dbPort = 5001; // Change this to your desired port number
+
+            // Construct the new URL with the updated port
+            const dbURL = `${currentProtocol}//${currentHost}:${dbPort}`;
+
+
+            function fetchVehicles() {
+                $.ajax({
+                    url: `${dbURL}/vehicle`, // Update the URL based on your Flask route for getting all vehicles
+                    type: 'GET',
+                    success: function(data) {
+                        // Clear existing list items
+                        $('#vehicle-list').empty();
+                        console.log(data)
+                        
+                        // const arr = JSON.parse(data)
+                        // Loop through the data and add vehicles to the list
+                        data.forEach(function(vehicle) {
+                            $('#vehicle-list').append(`<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="text-uppercase">${vehicle.plate_number}</h4>
+                                    <span>${vehicle.name} - ${vehicle.car_brand}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${vehicle.id})">Delete</button>
+                                    </div>
+                                    </li>`);
+                                });
+                                // <button disabled class="btn disabled btn-primary btn-sm mx-2" onclick="editVehicle(${vehicle.id})">Edit</button>
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching vehicles:', error);
+                    }
+                });
+            }
+
+            // Function to handle form submission for creating a new vehicle
+            $('#create-form').submit(function(event) {
+                event.preventDefault(); // Prevent the default form submission
+                var formData = {
+                    name: $('#name').val(),
+                    plate_number: $('#plate_number').val(),
+                    car_brand: $('#car_brand').val()
+                };
+                $.ajax({
+                    url: `${dbURL}/vehicle`, // Update the URL based on your Flask route for adding a vehicle
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData), // Serialize form data
+                    success: function(response) {
+                        console.log('vehicle added:', response);
+
+                        // Clear form fields after successful submission
+                        $('#name').val('');
+                        $('#plate_number').val('');
+                        $('#car_brand').val('');
+
+                        // Fetch and display updated list of vehicles
+                        fetchVehicles();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error adding vehicle:', error);
+                    }
+                });
+            });
+
+            // Function to handle editing a vehicle
+            window.editVehicle = function(vehicleId) {
+                // You can implement the edit functionality here, e.g., open a modal with the vehicle details for editing
+                console.log('Edit vehicle:', vehicleId);
+            };
+
+            // Function to handle deleting a vehicle
+            window.deleteVehicle = function(vehicleId) {
+                if (confirm('Are you sure you want to delete this vehicle?')) {
+                    $.ajax({
+                        url: `${dbURL}/vehicle/${vehicleId}`, // Update the URL based on your Flask route for deleting a vehicle
+                        type: 'DELETE',
+                        success: function(response) {
+                            console.log('vehicle deleted:', response);
+
+                            // Fetch and display updated list of vehicles after deletion
+                            fetchVehicles();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error deleting vehicle:', error);
+                        }
+                    });
+                }
+            };
+
+            fetchVehicles();
         });
     </script>
 </body>

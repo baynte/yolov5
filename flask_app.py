@@ -30,6 +30,14 @@ classes = ["plates", "vehicle"]
 last_detection_time = time.time()
 detection_interval = 10  # seconds
 
+def enlarge_frame(frame, scale_percent=150):
+    # Calculate the new dimensions based on the scale percent
+    width = int(frame.shape[1] * scale_percent / 100)
+    height = int(frame.shape[0] * scale_percent / 100)
+    # Resize the frame using the calculated dimensions
+    enlarged_frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_LINEAR)
+    return enlarged_frame
+
 def generate_frames(ctrl):
     global last_detection_time
     while True:
@@ -61,6 +69,7 @@ def generate_frames(ctrl):
                         if class_name == "plates":
                             # Crop the detected object from the frame
                             cropped_object = frame[y1+8:y2-8, x1+6:x2-5]
+                            cropped_object = enlarge_frame(cropped_object, scale_percent=200)
                             cropped_object_gray = enhance_image(cropped_object)
                             cv2.imwrite(f'cropped_{class_name}.jpg', cropped_object_gray)
                             extracted_text = pytesseract.image_to_string(cropped_object_gray, lang='eng', config='--psm 6')
@@ -150,12 +159,17 @@ def receive_post_request():
 def gate_status():
     try:
         with open('gate-status.txt', 'r') as file:
-            content = file.readline().strip()
+            # Read the first line and store it in the variable status
+            status = file.readline().strip()
+            # Read the second line and store it in the variable text
+            text = file.readline().strip()
         return json.dumps({
-            "data": False if content == "close" else True 
+            "text": text,
+            "data": False if status == "close" else True
         })
     except FileNotFoundError:
         return "close"
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
