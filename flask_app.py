@@ -76,7 +76,14 @@ def generate_frames(ctrl):
                             data = read_data_from_file('gate-status.txt', extracted_text)
                             print('Gate Status:', data)
                             last_detection_time = time.time()
-
+                    if len(detections) == 0:
+                        with open('gate-status.txt', 'r') as file:
+                            status = file.readline().strip()
+                        write_data_to_file('gate-status.txt', status)
+                        # print("No Detections")
+                # else:
+                    # print("No Detections")
+                    # write_data_to_file('gate-status.txt', status)
                 # Check if no detection for the specified interval
                 if time.time() - last_detection_time > detection_interval:
                     write_data_to_file('gate-status.txt', 'close')

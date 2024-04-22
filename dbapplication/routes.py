@@ -1,5 +1,6 @@
 from flask import request, jsonify
-from models import Vehicle
+from models import Vehicle, TimeLog
+from datetime import datetime, timedelta
 
 def register_routes(app, db):
 
@@ -25,6 +26,31 @@ def register_routes(app, db):
       db.session.delete(vehicle)
       db.session.commit()
       return str(vehicle)
+  
+  @app.route('/vehicle/plate-number/log', methods=['POST'])
+  def log_vehicle():
+    plate_number = request.json['plate_number']
+    vehicle = Vehicle.query.filter_by(plate_number=plate_number).first()
+    if vehicle:
+        # Check if there is a previous time log for this vehicle
+        previous_log = TimeLog.query.filter_by(vehicle_id=vehicle.id).order_by(TimeLog.log_time.desc()).first()
+        if not previous_log or (datetime.utcnow() - previous_log.log_time) > timedelta(seconds=15):
+            stat = 'IN'
+            if previous_log:
+              stat = 'IN' if previous_log.status == 'OUT' else 'OUT'
+            
+            time_log = TimeLog(vehicle_id=vehicle.id, status=stat)
+            db.session.add(time_log)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Vehicle logged successfully.'}), 200
+    return jsonify({'success': False, 'message': 'Failed to log vehicle.'}), 400
+  
+  @app.route('/vehicle/logs', methods=['GET'])
+  def index_logs():
+    if request.method == 'GET':
+      logs = TimeLog.query.order_by(TimeLog.log_time.desc()).all()
+      logs_list = [log.to_dict() for log in logs]
+      return jsonify(logs_list)
 
 # def add_vehicle():
 #     name = request.json['name']

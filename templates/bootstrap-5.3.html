@@ -96,7 +96,7 @@
                     </div>
                     <div class="card-body" id="automatic-content">
                         <p class="mt-3">Detected Plate Number:</p>
-                        <p id="plate-number">NO DETECTED</p>
+                        <p id="plate-number" class="text-uppercase">NO DETECTED</p>
                     </div>
                     <div class="card-body manual-card" id="manual-content">
                         <div class="form-check form-switch">
@@ -137,14 +137,21 @@
                         <div class="col-4">
                             <div>
                                 <h3 class="mb-3">Registered Vehicle</h3>
-                                <ul id="vehicle-list" class="list-group">
-                                    <!-- Vehicles will be dynamically added here -->
-                                </ul>
+                                <section style="max-height: 500px; overflow-y: auto;">
+                                    <ul id="vehicle-list" class="list-group">
+                                        <!-- Vehicles will be dynamically added here -->
+                                    </ul>
+                                </section>
                             </div>
                         </div>
                         <div class="col-5">
-                            <h3>Vehicle Logs</h3>
-                            <!-- List of vehicles & edit deletion function -->
+                            <h3 class="mb-3">Vehicle Logs</h3>
+                            <!-- List of time logs & edit deletion function -->
+                            <section style="max-height: 500px; overflow-y: auto;">
+                                <ul id="time-logs" class="list-group">
+                                    <!-- time logs will be dynamically added here -->
+                                </ul>
+                            </section>
                         </div>
                     </div>
                 </div>
@@ -180,12 +187,50 @@
         $(document).ready(function() {
             const switchBtn = document.getElementById('switchBtn');
             const switchLabel = document.getElementById('switchLabel');
+            let vehicles = []
+
+            const currentHost = window.location.hostname;
+            const currentProtocol = window.location.protocol;
+
+            // Set the new port number
+            const dbPort = 5001; // Change this to your desired port number
+
+            // Construct the new URL with the updated port
+            const dbURL = `${currentProtocol}//${currentHost}:${dbPort}`;
 
             function updateTextGateStatus(status){
                 document.getElementById('gate-status').innerText = status ? 'OPEN' : 'CLOSE'
             }
+            
             function updateTextPlateNumber(text){
                 document.getElementById('plate-number').innerText = text || 'NO DETECTION'
+                // submitTimeLog(text)
+                if(text.length){
+                    submitTimeLog(text)
+                }
+                // submitTimeLog('zaq-xsw')
+            }
+
+            function submitTimeLog(plate_number){
+                const url = `${dbURL}/vehicle/plate-number/log`;
+                const data = { plate_number };
+                
+                fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                })
+                .then(response => response.json())
+                .then(data => {
+                console.log('Response:', data);
+                    getTimeLogs()
+                })
+                .catch(error => {
+                console.error('Error:', error);
+                });
+
             }
 
             function updateManualGateStatus(bool){
@@ -230,6 +275,62 @@
                 updateManualGateStatus(switchBtn.checked)
             });
 
+            function formatDateTime(datetimeStr) {
+                // Split the datetime string into date and time parts
+                let [datePart, timePart] = datetimeStr.split(' ');
+
+                // Convert the date part to a human-readable format
+                let [year, month, day] = datePart.split('-');
+                let formattedDate = `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
+
+                // Convert the time part to a human-readable format
+                let [hour, minute, second] = timePart.split(':');
+                let ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12 || 12; // Convert 0 to 12 for AM/PM format
+                let formattedTime = `${hour}:${minute} ${ampm}`;
+
+                return `${formattedDate} ${formattedTime}`;
+            }
+
+            function getTimeLogs(){
+                $.ajax({
+                    url: `${dbURL}/vehicle/logs`, // Update the URL based on your Flask route for getting all vehicles
+                    type: 'GET',
+                    success: function(data) {
+                        // Clear existing list items
+                        $('#time-logs').empty();
+                        console.log(data)
+                        
+                        // const arr = JSON.parse(data)
+                        // Loop through the data and add vehicles to the list
+                        // vehicles = data
+                        data.filter(function(obj){
+                            return vehicles.map(x => x.id).includes(obj.vehicle_id)
+                        })
+                        .forEach(function(time) {
+                            const vehicle = vehicles.find(function(obj){
+                                return obj.id == time.vehicle_id
+                            })
+                            $('#time-logs').append(`<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="text-uppercase">
+                                        ${vehicle.plate_number}
+                                        ${time.status == 'IN' ? '<span class="badge text-bg-success">IN</span>' : '<span class="badge text-bg-secondary">OUT</span>'}
+                                    </h4>
+                                    <span>${vehicle.name} - ${vehicle.car_brand}</span>
+                                </div>
+                                <div class="">
+                                    ${formatDateTime(time.log_time)}
+                                </div>
+                            </li>`);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching vehicles:', error);
+                    }
+                });
+            }
+
             function fetchGateStatus() {
                 fetch('/gate-status')
                     .then(response => response.text())
@@ -237,7 +338,18 @@
                         // console.log(data)
                         const obj = JSON.parse(data)
                         updateTextGateStatus(obj.data);
-                        updateTextPlateNumber(obj.text);
+
+                        // Remove leading and trailing whitespace
+                        text = obj.text.trim();
+
+                        // Replace spaces in the middle with hyphens
+                        text = text.replace(/\s+/g, '-');
+
+                        // Remove spaces adjacent to hyphens
+                        text = text.replace(/-\s+-/g, '-');
+
+                        const trim = text.toLowerCase() //obj.text.replace(/\s/g, '');
+                        updateTextPlateNumber(trim);
                     })
                     .catch(error => {
                         console.error('Error fetching gate status:', error);
@@ -245,18 +357,7 @@
             }
 
             fetchGateStatus();
-            setInterval(fetchGateStatus, 2000);
-
-
-            const currentHost = window.location.hostname;
-            const currentProtocol = window.location.protocol;
-
-            // Set the new port number
-            const dbPort = 5001; // Change this to your desired port number
-
-            // Construct the new URL with the updated port
-            const dbURL = `${currentProtocol}//${currentHost}:${dbPort}`;
-
+            setInterval(fetchGateStatus, 1000);
 
             function fetchVehicles() {
                 $.ajax({
@@ -269,6 +370,7 @@
                         
                         // const arr = JSON.parse(data)
                         // Loop through the data and add vehicles to the list
+                        vehicles = data
                         data.forEach(function(vehicle) {
                             $('#vehicle-list').append(`<li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
@@ -291,9 +393,20 @@
             // Function to handle form submission for creating a new vehicle
             $('#create-form').submit(function(event) {
                 event.preventDefault(); // Prevent the default form submission
+
+                text = $('#plate_number').val().trim();
+
+                // Replace spaces in the middle with hyphens
+                text = text.replace(/\s+/g, '-');
+
+                // Remove spaces adjacent to hyphens
+                text = text.replace(/-\s+-/g, '-');
+
+                const trim = text.toLowerCase()
+
                 var formData = {
                     name: $('#name').val(),
-                    plate_number: $('#plate_number').val(),
+                    plate_number: trim,
                     car_brand: $('#car_brand').val()
                 };
                 $.ajax({
@@ -335,6 +448,7 @@
 
                             // Fetch and display updated list of vehicles after deletion
                             fetchVehicles();
+                            getTimeLogs();
                         },
                         error: function(xhr, status, error) {
                             console.error('Error deleting vehicle:', error);
@@ -344,6 +458,7 @@
             };
 
             fetchVehicles();
+            getTimeLogs();
         });
     </script>
 </body>
