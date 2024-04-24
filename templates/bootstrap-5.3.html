@@ -299,7 +299,7 @@
                     success: function(data) {
                         // Clear existing list items
                         $('#time-logs').empty();
-                        console.log(data)
+                        
                         
                         // const arr = JSON.parse(data)
                         // Loop through the data and add vehicles to the list
@@ -314,7 +314,7 @@
                             $('#time-logs').append(`<li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
                                     <h4 class="text-uppercase">
-                                        ${vehicle.plate_number}
+                                        (${vehicles.vehicle_id})${vehicle.plate_number}
                                         ${time.status == 'IN' ? '<span class="badge text-bg-success">IN</span>' : '<span class="badge text-bg-secondary">OUT</span>'}
                                     </h4>
                                     <span>${vehicle.name} - ${vehicle.car_brand}</span>
@@ -374,7 +374,7 @@
                         data.forEach(function(vehicle) {
                             $('#vehicle-list').append(`<li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h4 class="text-uppercase">${vehicle.plate_number}</h4>
+                                    <h4 class="text-uppercase">(${vehicle.id})${vehicle.plate_number}</h4>
                                     <span>${vehicle.name} - ${vehicle.car_brand}</span>
                                 </div>
                                 <div class="d-flex align-items-center">
