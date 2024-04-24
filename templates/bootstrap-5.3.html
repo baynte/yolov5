@@ -366,7 +366,10 @@
                     success: function(data) {
                         // Clear existing list items
                         $('#vehicle-list').empty();
-                        console.log(data)
+                        // console.log(data)
+                        if(!data.length){
+                            deleteLogs()
+                        }
                         
                         // const arr = JSON.parse(data)
                         // Loop through the data and add vehicles to the list
@@ -456,6 +459,22 @@
                     });
                 }
             };
+
+            function deleteLogs(){
+                $.ajax({
+                    url: `${dbURL}/vehicle/logs/delete`, // Update the URL based on your Flask route for deleting a vehicle
+                    type: 'DELETE',
+                    success: function(response) {
+                        console.log('logs deleted:', response);
+
+                        // Fetch and display updated list of vehicles after deletion
+                        getTimeLogs();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error deleting vehicle:', error);
+                    }
+                });
+            }
 
             fetchVehicles();
             getTimeLogs();

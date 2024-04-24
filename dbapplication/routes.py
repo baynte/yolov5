@@ -51,6 +51,12 @@ def register_routes(app, db):
       logs = TimeLog.query.order_by(TimeLog.log_time.desc()).all()
       logs_list = [log.to_dict() for log in logs]
       return jsonify(logs_list)
+    
+  @app.route('/vehicle/logs/delete', methods=['DELETE'])
+  def remove_logs():
+    db.session.query(TimeLog).delete()
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Logging Removed.'}), 200
 
 # def add_vehicle():
 #     name = request.json['name']
