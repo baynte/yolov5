@@ -2,7 +2,9 @@ from flask import Flask, render_template, Response, request, jsonify
 import cv2
 import torch
 import socket
+import requests
 import pytesseract
+import re
 import numpy as np
 from models.experimental import attempt_load
 from utils.general import non_max_suppression
@@ -21,7 +23,8 @@ model.eval()
 video_capture = cv2.VideoCapture(0)  # Default camera
 
 # Tesseract OCR configuration
-pytesseract.pytesseract.tesseract_cmd = r'C:\Users\DSWD\AppData\Local\Programs\Tesseract-OCR\tesseract'
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'C:\Users\DSWD\AppData\Local\Programs\Tesseract-OCR\tesseract'
 
 # Object classes
 classes = ["plates", "vehicle"]
@@ -40,6 +43,7 @@ def enlarge_frame(frame, scale_percent=150):
 
 def generate_frames(ctrl):
     global last_detection_time
+    db_url = "http://127.0.0.1:5001/is-vehicle-registered/"
     while True:
         success, frame = video_capture.read()
         if not success:
@@ -72,10 +76,24 @@ def generate_frames(ctrl):
                             cropped_object = enlarge_frame(cropped_object, scale_percent=200)
                             cropped_object_gray = enhance_image(cropped_object)
                             cv2.imwrite(f'cropped_{class_name}.jpg', cropped_object_gray)
-                            extracted_text = pytesseract.image_to_string(cropped_object_gray, lang='eng', config='--psm 6')
-                            data = read_data_from_file('gate-status.txt', extracted_text)
-                            print('Gate Status:', data)
-                            last_detection_time = time.time()
+                            extracted_text = clean_string(pytesseract.image_to_string(cropped_object_gray, lang='eng', config='--psm 6'))
+                            # data = read_data_from_file('gate-status.txt', extracted_text)
+                            # print('Gate Status:', data)
+                            try:
+                                # Send a GET request to the API
+                                response = requests.get(db_url+extracted_text)
+                                # Check if the request was successful (status code 200)
+                                if response.status_code == 200:
+                                    # Get the JSON data from the response
+                                    data = response.json()
+                                    if data['is_exist']:
+                                        last_detection_time = time.time()
+                                        write_data_to_file('gate-status.txt', "open\n"+extracted_text)
+                                else:
+                                    print("Error: Failed to fetch data from API (Status Code: {response.status_code})")
+                            except requests.RequestException as e:
+                                print("Error: {e}")
+                            # last_detection_time = time.time()
                     if len(detections) == 0:
                         with open('gate-status.txt', 'r') as file:
                             status = file.readline().strip()
@@ -91,6 +109,14 @@ def generate_frames(ctrl):
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+def clean_string(input_string):
+    # Remove whitespace and special characters using regular expressions
+    cleaned_string = re.sub(r'[^a-zA-Z0-9\s]', '', input_string)
+    cleaned_string = cleaned_string.replace('\n', '')
+    # Replace spaces with hyphens
+    cleaned_string = re.sub(r'\s+', '-', cleaned_string)
+    return cleaned_string.lower()
 
 @app.route('/')
 def index():
@@ -109,9 +135,9 @@ def enhance_image(image):
 
 def read_data_from_file(filename, text):
     try:
-        with open(filename, 'w') as file:
-            file.write("open\n")
-            file.write(f"{text}\n")
+        # with open(filename, 'w') as file:
+        #     file.write("close\n")
+        #     file.write(f"{text}\n")
         with open(filename, 'r') as file:
             data = file.read()
         return data
