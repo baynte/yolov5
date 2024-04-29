@@ -87,6 +87,8 @@ def generate_frames(ctrl):
                                     # Get the JSON data from the response
                                     data = response.json()
                                     if data['is_exist']:
+                                        data = {'plate_number': extracted_text }
+                                        response = requests.post(db_url+"/vehicle/plate-number/log", json=data)
                                         last_detection_time = time.time()
                                         write_data_to_file('gate-status.txt', "open\n"+extracted_text)
                                 else:
