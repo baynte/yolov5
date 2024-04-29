@@ -57,6 +57,14 @@ def register_routes(app, db):
     db.session.query(TimeLog).delete()
     db.session.commit()
     return jsonify({'success': True, 'message': 'Logging Removed.'}), 200
+  
+  @app.route('/is-vehicle-registered/<plate_number>', methods=['GET'])
+  def isRegistered(plate_number):
+    vehicle = Vehicle.query.filter_by(plate_number=plate_number).first()
+    if vehicle:
+      return jsonify({'is_exist': True, 'plate_number': plate_number})
+    return jsonify({'is_exist': False, 'plate_number': plate_number})
+
 
 # def add_vehicle():
 #     name = request.json['name']
